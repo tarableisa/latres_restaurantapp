@@ -37,15 +37,33 @@ class RestaurantDetail {
       address: json['address'],
       rating: (json['rating'] as num).toDouble(),
       categories:
-          List<String>.from(json['categories'].map((cat) => cat['name'])),
+          List<String>.from(json['categories'].map((c) => c['name'])),
       foods:
-          List<String>.from(json['menus']['foods'].map((food) => food['name'])),
-      drinks: List<String>.from(
-          json['menus']['drinks'].map((drink) => drink['name'])),
+          List<String>.from(json['menus']['foods'].map((m) => m['name'])),
+      drinks:
+          List<String>.from(json['menus']['drinks'].map((m) => m['name'])),
       customerReviews: List<CustomerReview>.from(
         json['customerReviews']
-            .map((review) => CustomerReview.fromJson(review)),
+            .map((r) => CustomerReview.fromJson(r)),
       ),
+    );
+  }
+
+  factory RestaurantDetail.fromMap(Map<String, dynamic> m) {
+    return RestaurantDetail(
+      id: m['id'],
+      name: m['name'],
+      description: m['description'],
+      pictureId: m['pictureId'],
+      city: m['city'],
+      address: m['address'],
+      rating: (m['rating'] as num).toDouble(),
+      categories: List<String>.from(jsonDecode(m['categories'])),
+      foods: List<String>.from(jsonDecode(m['foods'])),
+      drinks: List<String>.from(jsonDecode(m['drinks'])),
+      customerReviews: (jsonDecode(m['customerReviews']) as List)
+          .map((e) => CustomerReview.fromMap(e))
+          .toList(),
     );
   }
 
@@ -53,35 +71,17 @@ class RestaurantDetail {
     return {
       'id': id,
       'name': name,
+      'description': description,
+      'pictureId': pictureId,
       'city': city,
       'address': address,
-      'pictureId': pictureId,
       'rating': rating,
-      'description': description,
       'categories': jsonEncode(categories),
       'foods': jsonEncode(foods),
       'drinks': jsonEncode(drinks),
-      'customerReviews': jsonEncode(customerReviews),
+      'customerReviews':
+          jsonEncode(customerReviews.map((c) => c.toMap()).toList()),
     };
-  }
-
-  factory RestaurantDetail.fromMap(Map<String, dynamic> map) {
-    return RestaurantDetail(
-      id: map['id'],
-      name: map['name'],
-      city: map['city'],
-      address: map['address'],
-      pictureId: map['pictureId'],
-      rating: map['rating'],
-      description: map['description'],
-      categories: List<String>.from(jsonDecode(map['categories'])),
-      foods: List<String>.from(jsonDecode(map['foods'])),
-      drinks: List<String>.from(jsonDecode(map['drinks'])),
-      customerReviews: List<CustomerReview>.from(
-        jsonDecode(map['customerReviews'])
-            .map((x) => CustomerReview.fromJson(x)),
-      ),
-    );
   }
 }
 
@@ -96,27 +96,21 @@ class CustomerReview {
     required this.date,
   });
 
-  factory CustomerReview.fromJson(Map<String, dynamic> json) {
-    return CustomerReview(
-      name: json['name'],
-      review: json['review'],
-      date: json['date'],
-    );
-  }
+  factory CustomerReview.fromJson(Map<String, dynamic> json) => CustomerReview(
+        name: json['name'],
+        review: json['review'],
+        date: json['date'],
+      );
 
-  Map<String, dynamic> toMap() {
-    return {
-      'name': name,
-      'review': review,
-      'date': date,
-    };
-  }
+  factory CustomerReview.fromMap(Map<String, dynamic> m) => CustomerReview(
+        name: m['name'],
+        review: m['review'],
+        date: m['date'],
+      );
 
-  factory CustomerReview.fromMap(Map<String, dynamic> map) {
-    return CustomerReview(
-      name: map['name'],
-      review: map['review'],
-      date: map['date'],
-    );
-  }
+  Map<String, dynamic> toMap() => {
+        'name': name,
+        'review': review,
+        'date': date,
+      };
 }

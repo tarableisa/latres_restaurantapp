@@ -1,60 +1,46 @@
-import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/restaurant_detail.dart';
 
 class FavDbService {
-  static Database? _db;
+  static const _key = 'favorite_restaurants';
 
-  Future<Database> get db async {
-    if (_db != null) return _db!;
-    final path = join(await getDatabasesPath(), 'fav.db');
-    _db = await openDatabase(
-      path,
-      version: 1,
-      onCreate: (db, v) {
-        return db.execute('''
-          CREATE TABLE favorites(
-            id TEXT PRIMARY KEY,
-            name TEXT,
-            city TEXT,
-            address TEXT,
-            pictureId TEXT,
-            rating REAL,
-            description TEXT,
-            categories TEXT,
-            foods TEXT,
-            drinks TEXT,
-            customerReviews TEXT
-          )
-        ''');
-      },
-    );
-    return _db!;
-  }
-
-  Future<void> addFavorite(RestaurantDetail r) async {
-    final database = await db;
-    await database.insert(
-      'favorites',
-      r.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-  }
-
-  Future<void> removeFavorite(String id) async {
-    final database = await db;
-    await database.delete('favorites', where: 'id = ?', whereArgs: [id]);
-  }
-
-  Future<bool> isFavorite(String id) async {
-    final database = await db;
-    final res = await database.query('favorites', where: 'id = ?', whereArgs: [id]);
-    return res.isNotEmpty;
-  }
-
+  // Ambil semua favorit
   Future<List<RestaurantDetail>> getFavorites() async {
-    final database = await db;
-    final rows = await database.query('favorites');
-    return rows.map((r) => RestaurantDetail.fromMap(r)).toList();
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = prefs.getString(_key);
+    if (jsonString == null) return [];
+
+    final List<dynamic> decoded = jsonDecode(jsonString);
+    return decoded.map((r) => RestaurantDetail.fromMap(r)).toList();
+  }
+
+  // Simpan semua favorit
+  Future<void> _saveFavorites(List<RestaurantDetail> favorites) async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = jsonEncode(favorites.map((r) => r.toMap()).toList());
+    await prefs.setString(_key, jsonString);
+  }
+
+  // Tambah favorit
+  Future<void> addFavorite(RestaurantDetail r) async {
+    final favorites = await getFavorites();
+    if (!favorites.any((item) => item.id == r.id)) {
+      favorites.add(r);
+      await _saveFavorites(favorites);
+    }
+  }
+
+  // Hapus favorit
+  Future<void> removeFavorite(String id) async {
+    final favorites = await getFavorites();
+    favorites.removeWhere((item) => item.id == id);
+    await _saveFavorites(favorites);
+  }
+
+  // Cek apakah ID favorit
+  Future<bool> isFavorite(String id) async {
+    final favorites = await getFavorites();
+    return favorites.any((item) => item.id == id);
   }
 }

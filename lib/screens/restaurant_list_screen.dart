@@ -14,23 +14,34 @@ class RestaurantListScreen extends StatefulWidget {
 class _RestaurantListScreenState extends State<RestaurantListScreen> {
   final ApiService _api = ApiService();
   final AuthService _auth = AuthService();
-  late Future<List<Restaurant>> _future;
-  String _filterCategory = '';
+
+  late Future<List<Restaurant>> _futureList;
+  List<String> _categories = [];
+  String _filter = '';
 
   @override
   void initState() {
     super.initState();
-    _future = _api.getRestaurants();
+    _futureList = _api.getRestaurants();
+    _loadCategories();
+  }
+
+  Future<void> _loadCategories() async {
+    final list = await _api.getRestaurants();
+    final cats = <String>{};
+    // fetch detail tiap restoran dan kumpulkan kategori
+    for (var r in list) {
+      final detail = await _api.getRestaurantDetail(r.id);
+      cats.addAll(detail.categories);
+    }
+    setState(() => _categories = cats.toList());
   }
 
   void _applyFilter(String cat) {
     setState(() {
-      _filterCategory = cat;
-      if (cat.isEmpty) {
-        _future = _api.getRestaurants();
-      } else {
-        _future = _api.searchRestaurants(cat);
-      }
+      _filter = cat;
+      _futureList =
+          cat.isEmpty ? _api.getRestaurants() : _api.searchRestaurants(cat);
     });
   }
 
@@ -45,39 +56,47 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
             title: Text('Hello, $user'),
             actions: [
               IconButton(
-                icon: const Icon(Icons.favorite),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const FavoritesScreen()),
-                  );
+                icon: const Icon(Icons.logout),
+                onPressed: () async {
+                  await _auth.logout();
+                  Navigator.pushReplacementNamed(context, '/login');
                 },
+              ),
+              IconButton(
+                icon: const Icon(Icons.favorite),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const FavoritesScreen()),
+                ),
               )
             ],
           ),
           body: Column(
             children: [
-              // Dropdown filter kategori
+              // dropdown kategori
               Padding(
                 padding: const EdgeInsets.all(8),
                 child: DropdownButton<String>(
                   isExpanded: true,
                   hint: const Text('Filter kategori'),
-                  value: _filterCategory.isEmpty ? null : _filterCategory,
-                  items: const [
-                    DropdownMenuItem(value: '', child: Text('Semua')),
-                    DropdownMenuItem(value: 'Modern', child: Text('Modern')),
-                    DropdownMenuItem(
-                        value: 'Traditional', child: Text('Traditional')),
+                  value: _filter.isEmpty ? null : _filter,
+                  items: [
+                    const DropdownMenuItem(value: '', child: Text('Semua')),
+                    ..._categories
+                        .map((c) => DropdownMenuItem(
+                              value: c,
+                              child: Text(c),
+                            ))
+                        .toList(),
                   ],
                   onChanged: (v) => _applyFilter(v ?? ''),
                 ),
               ),
 
-              // List restoran
+              // daftar restoran
               Expanded(
                 child: FutureBuilder<List<Restaurant>>(
-                  future: _future,
+                  future: _futureList,
                   builder: (ctx, snap) {
                     if (snap.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
@@ -100,13 +119,11 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
                           ),
                           title: Text(r.name),
                           subtitle: Text('${r.city} • ⭐ ${r.rating}'),
-                          onTap: () {
-                            Navigator.pushNamed(
-                              context,
-                              '/detail',
-                              arguments: r.id,
-                            );
-                          },
+                          onTap: () => Navigator.pushNamed(
+                            context,
+                            '/detail',
+                            arguments: r.id,
+                          ),
                         );
                       },
                     );

@@ -64,24 +64,24 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
             body: Center(child: CircularProgressIndicator()),
           );
         }
-        if (snap.hasError) {
-          return Scaffold(
-            body: Center(child: Text('Error: ${snap.error}')),
-          );
-        }
-
         final detail = snap.data!;
         return Scaffold(
           appBar: AppBar(
             title: const Text('Detail Restaurant'),
-            leading: BackButton(onPressed: () => Navigator.pop(context)),
+            leading: BackButton(onPressed: () {
+              Navigator.pop(context);
+            }),
             actions: [
               IconButton(
                 icon: Icon(
                   _isFav ? Icons.favorite : Icons.favorite_border,
                   color: _isFav ? Colors.red : null,
                 ),
-                onPressed: () => _toggleFav(detail),
+                onPressed: () {
+                  _toggleFav(detail).then((_) {
+                    // Setelah toggle, biar halaman favorit reload nanti
+                  });
+                },
               ),
             ],
           ),

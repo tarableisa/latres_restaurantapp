@@ -1,32 +1,30 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 
-class LoginScreen extends StatefulWidget {
+class RegisterScreen extends StatefulWidget {
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _RegisterScreenState extends State<RegisterScreen> {
   final _auth = AuthService();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscure = true;
 
-  void _login() async {
+  void _register() async {
     final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
 
     if (username.isEmpty || password.isEmpty) {
-      _showMessage('Username dan Password wajib diisi');
+      _showMessage('Username dan Password tidak boleh kosong');
       return;
     }
 
-    final valid = await _auth.validateLogin(username, password);
-    if (valid) {
-      Navigator.pushReplacementNamed(context, '/list');
-    } else {
-      _showMessage('Username atau password salah');
-    }
+    await _auth.register(username, password);
+    _showMessage('Registrasi berhasil! Silakan login.');
+
+    Navigator.pushReplacementNamed(context, '/login');
   }
 
   void _showMessage(String msg) {
@@ -36,7 +34,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Login')),
+      appBar: AppBar(title: const Text('Register')),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -61,14 +59,14 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             const SizedBox(height: 30),
             ElevatedButton(
-              onPressed: _login,
-              child: const Text('Login'),
+              onPressed: _register,
+              child: const Text('Daftar'),
             ),
             TextButton(
               onPressed: () {
-                Navigator.pushReplacementNamed(context, '/register');
+                Navigator.pushReplacementNamed(context, '/login');
               },
-              child: const Text('Belum punya akun? Daftar di sini'),
+              child: const Text('Sudah punya akun? Login di sini'),
             ),
           ],
         ),
